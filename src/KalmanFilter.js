@@ -10,7 +10,7 @@ class KalmanFilter {
     MeasurementCovariance,
     ObservationModel,
     ProcessCovariance,
-    StateTransitionModel,
+    StateTransitionModelFunct,
   }) {
     this.ControlModel = ControlModel;
     this.PreviousCovariance = InitialCovariance;
@@ -18,12 +18,12 @@ class KalmanFilter {
     this.MeasurementCovariance = MeasurementCovariance;
     this.ObservationModel = ObservationModel;
     this.ProcessCovariance = ProcessCovariance;
-    this.StateTransitionModel = StateTransitionModel;
+    this.StateTransitionModelFunct = StateTransitionModelFunct;
 
-    this.NUM_DIMENSIONS = InitialState.size()[1] || 1;
+    this.NUM_DIMENSIONS = InitialState.size()[0];
   }
 
-  step(MeasurementInput: Object, ControlInput: Object): void {
+  step(MeasurementInput: Object, ControlInput: Object, dt: number): void {
     let {
       ControlModel,
       PreviousCovariance,
@@ -31,9 +31,11 @@ class KalmanFilter {
       MeasurementCovariance,
       ObservationModel,
       ProcessCovariance,
-      StateTransitionModel,
+      StateTransitionModelFunct,
       NUM_DIMENSIONS,
     } = this;
+
+    let StateTransitionModel = StateTransitionModelFunct(dt);
 
     let StatePrediction = add(
       multiply(StateTransitionModel, PreviousState),

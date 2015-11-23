@@ -1,6 +1,7 @@
 /*
- * This is a simple example of how to use the kalman filter, where the state
- * is directly being measured, is a single value, and is constant.
+ * This is another simple example of how to use the kalman filter, where the
+ * state include a position and velocity, only the position is being measured,
+ * and the velocity is assumed to be constant.
  *
  * In this senario, a running average would be just as effective as  Kalman
  * filter.

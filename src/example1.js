@@ -2,26 +2,26 @@
  * This is a simple example of how to use the kalman filter, where the state
  * is directly being measured, is a single value, and is constant.
  *
- * In this senario, using a running average would be just as effective as
- * using a Kalman filter.
+ * In this senario, a running average would be just as effective as  Kalman
+ * filter.
  *
  * @flow
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {format, matrix, subset, index} = require('mathjs');
-const {normal, makeCanvasFitWindow} = require('./utils');
+const {index, matrix, subset} = require('mathjs');
+const {makeCanvasFitWindow, normal} = require('./utils');
 
-let STEPS = 60;
-let MEAN = 1.3;
-let VARIANCE = .1;
+const MEAN = 1.3;
+const STEPS = 10;
+const VARIANCE = .1;
 
-// hack to get value out of mathjs matrix
-function getValue(m) {
+// hack to get value out 1x1 mathjs matrix
+function getScalar(m) {
   try {
     return subset(m, index(0,0));
   } catch(e) {
-    // Apparently mutliplying two matries together can yield a scalar
+    // Apparently mutliplying two matricies together can yield a scalar
     return m;
   }
 }
@@ -30,7 +30,6 @@ function example() {
   /*
    * Kalman filter steps
    */
-
   let kalmanFilter = new KalmanFilter({
     ControlModel: matrix([[0]]),            // no control
     InitialCovariance: matrix([[1]]),       // guess
@@ -41,18 +40,19 @@ function example() {
     StateTransitionModel: matrix([[1]]),    // state doesn't change
   });
 
-  let measurementData = [0]; // ignore this first measurement
-  let stateData = [getValue(kalmanFilter.State)];
-  let covarianceData = [getValue(kalmanFilter.StateCovariance)];
+  let measurementData = [null]; // ignore this first measurement
+  let stateData = [getScalar(kalmanFilter.State)];
+  let covarianceData = [getScalar(kalmanFilter.StateCovariance)];
 
   for (let i = 0; i < STEPS; i++) {
     let ControlInput = matrix([[0]]); // no control
     let MeasurementInput = matrix([[normal(MEAN, VARIANCE)]]);
-    kalmanFilter.step(MeasurementInput, ControlInput);
+    let {State, StateCovariance} =
+      kalmanFilter.step(MeasurementInput, ControlInput);
 
-    measurementData.push(getValue(MeasurementInput));
-    stateData.push(getValue(kalmanFilter.State));
-    covarianceData.push(getValue(kalmanFilter.StateCovariance));
+    measurementData.push(getScalar(MeasurementInput));
+    stateData.push(getScalar(State));
+    covarianceData.push(getScalar(StateCovariance));
   }
 
   measurementData.forEach((_, i) => {
@@ -62,11 +62,12 @@ function example() {
   /*
    * Draw the data
    */
+  if (!global.window) return;
 
   const Chart = require('chart.js');
 
   makeCanvasFitWindow('canvas');
-  let canvas = document.getElementById('canvas');
+  let canvas: any = document.getElementById('canvas');
   let ctx = canvas.getContext('2d');
 
   let data = {

@@ -1,8 +1,23 @@
 /* @flow */
 
-const {eye, clone, format, add, subtract, multiply, inv, transpose, matrix} = require('mathjs');
-
 type Matrix = Object;
+
+const {eye, clone, format, add, subtract, multiply: multiplyTwo, inv, transpose, matrix} = require('mathjs');
+
+// matrix multiply with any number of matricies
+function multiply(...args): Matrix {
+  if (args.length < 2) {
+    throw new Error('multiply must take at least 2 arguments');
+  }
+
+  let result = multiplyTwo(args[0], args[1]);
+  for (let i = 2; i < args.length; i++) {
+    // matrix multiplication is associative, so A*B*C = (A*B)*C
+    result = multiplyTwo(result, args[i]);
+  }
+
+  return result;
+}
 
 class KalmanFilter {
   ControlModel: Matrix;
@@ -24,24 +39,27 @@ class KalmanFilter {
     StateTransitionModel,
   }: Object) {
     this.ControlModel = ControlModel;
-    this.StateCovariance = InitialCovariance;
-    this.State = InitialState;
     this.MeasurementCovariance = MeasurementCovariance;
     this.ObservationModel = ObservationModel;
     this.ProcessCovariance = ProcessCovariance;
+    this.State = InitialState;
+    this.StateCovariance = InitialCovariance;
     this.StateTransitionModel = StateTransitionModel;
 
     this.NUM_DIMENSIONS = InitialState.size()[0];
   }
 
-  step(MeasurementInput: Object, ControlInput: Object): void {
+  step(
+    MeasurementInput: Matrix,
+    ControlInput: Matrix
+  ): {State: Matrix; StateCovariance: Matrix} {
     let {
       ControlModel: B,
-      StateCovariance: P,
-      State: x,
       MeasurementCovariance: R,
       ObservationModel: H,
       ProcessCovariance: Q,
+      State: x,
+      StateCovariance: P,
       StateTransitionModel: F,
       NUM_DIMENSIONS: N,
     } = this;
@@ -49,61 +67,25 @@ class KalmanFilter {
     let u = ControlInput;
     let z = MeasurementInput;
 
-    let xPriori = add(
-      multiply(F, x),
-      multiply(B, u)
-    );
+    // predict
+    let xPriori = add(multiply(F, x), multiply(B, u));
+    let PPriori = add(multiply(F, P, transpose(F)), Q);
 
-    let PPriori = add(
-      multiply(
-        F,
-        multiply(
-          P,
-          transpose(F)
-        )
-      ),
-      Q
-    );
+    // measurement and innovation
+    let y = subtract(z, multiply(H, xPriori));
+    let S = add(R, multiply(H, PPriori, transpose(H)));
 
-    let y = subtract(
-      z,
-      multiply(H, xPriori)
-    );
+    // kalman gain
+    let K = multiply(PPriori, transpose(H), inv(S));
 
-    let S = add(
-      multiply(
-        H,
-        multiply(
-          PPriori,
-          transpose(H)
-        )
-      ),
-      R
-    );
-
-    let K = multiply(
-      PPriori,
-      multiply(
-        transpose(H),
-        inv(S)
-      )
-    );
-
-    let xPosteriori = add(
-      xPriori,
-      multiply(K, y)
-    );
-
-    let PPosteriori = multiply(
-      subtract(
-        eye(N),
-        multiply(K, H)
-      ),
-      PPriori
-    );
+    // update
+    let xPosteriori = add(xPriori, multiply(K, y));
+    let PPosteriori = multiply(subtract(eye(N), multiply(K, H)), PPriori);
 
     this.State = xPosteriori;
     this.StateCovariance = PPosteriori;
+
+    return {State: this.State, StateCovariance: this.StateCovariance};
   }
 }
 

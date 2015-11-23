@@ -2,7 +2,18 @@
 
 const {eye, clone, format, add, subtract, multiply, inv, transpose, matrix} = require('mathjs');
 
+type Matrix = Object;
+
 class KalmanFilter {
+  ControlModel: Matrix;
+  MeasurementCovariance: Matrix;
+  ObservationModel: Matrix;
+  ProcessCovariance: Matrix;
+  State: Matrix;
+  StateCovariance: Matrix;
+  StateTransitionModel: Matrix;
+  NUM_DIMENSIONS: number;
+
   constructor({
     ControlModel,
     InitialCovariance,
@@ -10,88 +21,89 @@ class KalmanFilter {
     MeasurementCovariance,
     ObservationModel,
     ProcessCovariance,
-    StateTransitionModelFunct,
-  }) {
+    StateTransitionModel,
+  }: Object) {
     this.ControlModel = ControlModel;
-    this.PreviousCovariance = InitialCovariance;
-    this.PreviousState = InitialState;
+    this.StateCovariance = InitialCovariance;
+    this.State = InitialState;
     this.MeasurementCovariance = MeasurementCovariance;
     this.ObservationModel = ObservationModel;
     this.ProcessCovariance = ProcessCovariance;
-    this.StateTransitionModelFunct = StateTransitionModelFunct;
+    this.StateTransitionModel = StateTransitionModel;
 
     this.NUM_DIMENSIONS = InitialState.size()[0];
   }
 
-  step(MeasurementInput: Object, ControlInput: Object, dt: number): void {
+  step(MeasurementInput: Object, ControlInput: Object): void {
     let {
-      ControlModel,
-      PreviousCovariance,
-      PreviousState,
-      MeasurementCovariance,
-      ObservationModel,
-      ProcessCovariance,
-      StateTransitionModelFunct,
-      NUM_DIMENSIONS,
+      ControlModel: B,
+      StateCovariance: P,
+      State: x,
+      MeasurementCovariance: R,
+      ObservationModel: H,
+      ProcessCovariance: Q,
+      StateTransitionModel: F,
+      NUM_DIMENSIONS: N,
     } = this;
 
-    let StateTransitionModel = StateTransitionModelFunct(dt);
+    let u = ControlInput;
+    let z = MeasurementInput;
 
-    let StatePrediction = add(
-      multiply(StateTransitionModel, PreviousState),
-      multiply(ControlModel, ControlInput)
+    let xPriori = add(
+      multiply(F, x),
+      multiply(B, u)
     );
 
-    let CovariancePrediction = add(
+    let PPriori = add(
       multiply(
-        StateTransitionModel,
+        F,
         multiply(
-          PreviousCovariance,
-          transpose(StateTransitionModel)
+          P,
+          transpose(F)
         )
       ),
-      ProcessCovariance
+      Q
     );
 
-    let Innovation = subtract(
-      MeasurementInput,
-      multiply(ObservationModel, StatePrediction)
+    let y = subtract(
+      z,
+      multiply(H, xPriori)
     );
 
-    let InnovationCovariance = add(
+    let S = add(
       multiply(
-        ObservationModel,
+        H,
         multiply(
-          CovariancePrediction,
-          transpose(ObservationModel)
+          PPriori,
+          transpose(H)
         )
       ),
-      MeasurementCovariance
+      R
     );
 
-    let KalmanGain = multiply(
-      CovariancePrediction,
+    let K = multiply(
+      PPriori,
       multiply(
-        transpose(ObservationModel),
-        inv(InnovationCovariance)
+        transpose(H),
+        inv(S)
       )
     );
 
-    let NextState = add(
-      StatePrediction,
-      multiply(KalmanGain, Innovation)
+    let xPosteriori = add(
+      xPriori,
+      multiply(K, y)
     );
 
-    let NextCovariance = multiply(
+    let PPosteriori = multiply(
       subtract(
-        eye(NUM_DIMENSIONS),
-        multiply(KalmanGain, ObservationModel)
+        eye(N),
+        multiply(K, H)
       ),
-      CovariancePrediction
+      PPriori
     );
 
-    this.PreviousState = clone(NextState);
-    this.PreviousCovariance = clone(NextCovariance);
+    this.State = xPosteriori;
+    this.StateCovariance = PPosteriori;
   }
 }
 

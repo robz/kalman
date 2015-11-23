@@ -9,7 +9,6 @@
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const Chart = require('chart.js');
 const {format, matrix, subset, index} = require('mathjs');
 const {normal, makeCanvasFitWindow} = require('./utils');
 
@@ -43,8 +42,8 @@ function example() {
   });
 
   let measurementData = [0]; // ignore this first measurement
-  let stateData = [getValue(kalmanFilter.PreviousState)];
-  let covarianceData = [getValue(kalmanFilter.PreviousCovariance)];
+  let stateData = [getValue(kalmanFilter.State)];
+  let covarianceData = [getValue(kalmanFilter.StateCovariance)];
 
   for (let i = 0; i < STEPS; i++) {
     let ControlInput = matrix([[0]]); // no control
@@ -52,14 +51,19 @@ function example() {
     kalmanFilter.step(MeasurementInput, ControlInput);
 
     measurementData.push(getValue(MeasurementInput));
-    stateData.push(getValue(kalmanFilter.PreviousState));
-    covarianceData.push(getValue(kalmanFilter.PreviousCovariance));
+    stateData.push(getValue(kalmanFilter.State));
+    covarianceData.push(getValue(kalmanFilter.StateCovariance));
   }
 
+  measurementData.forEach((_, i) => {
+    console.log(measurementData[i], stateData[i], covarianceData[i]);
+  });
 
   /*
    * Draw the data
    */
+
+  const Chart = require('chart.js');
 
   makeCanvasFitWindow('canvas');
   let canvas = document.getElementById('canvas');

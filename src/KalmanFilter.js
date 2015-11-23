@@ -69,7 +69,7 @@ class KalmanFilter {
 
     // predict
     let xPriori = add(multiply(F, x), multiply(B, u));
-    let PPriori = add(multiply(F, P, transpose(F)), Q);
+    let PPriori = add(Q, multiply(F, P, transpose(F)));
 
     // measurement and innovation
     let y = subtract(z, multiply(H, xPriori));

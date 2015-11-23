@@ -13,7 +13,7 @@ const {index, matrix, subset} = require('mathjs');
 const {makeCanvasFitWindow, normal} = require('./utils');
 
 const MEAN = 1.3;
-const STEPS = 10;
+const STEPS = 50;
 const VARIANCE = .1;
 
 // hack to get value out 1x1 mathjs matrix
@@ -43,6 +43,7 @@ function example() {
   let measurementData = [null]; // ignore this first measurement
   let stateData = [getScalar(kalmanFilter.State)];
   let covarianceData = [getScalar(kalmanFilter.StateCovariance)];
+  let trueData = [null];
 
   for (let i = 0; i < STEPS; i++) {
     let ControlInput = matrix([[0]]); // no control
@@ -50,6 +51,7 @@ function example() {
     let {State, StateCovariance} =
       kalmanFilter.step(MeasurementInput, ControlInput);
 
+    trueData.push(MEAN);
     measurementData.push(getScalar(MeasurementInput));
     stateData.push(getScalar(State));
     covarianceData.push(getScalar(StateCovariance));
@@ -73,6 +75,16 @@ function example() {
   let data = {
     labels: stateData.map((e,i) => i),
     datasets: [
+      {
+        label: 'Truth',
+        fillColor: 'rgba(205,187,151,0.2)',
+        strokeColor: 'rgba(205,187,151,1)',
+        pointColor: 'rgba(205,187,151,1)',
+        pointStrokeColor: '#fff',
+        pointHighlightFill: '#fff',
+        pointHighlightStroke: 'rgba(205,187,151,1)',
+        data: trueData,
+      },
       {
         label: 'Measurements',
         fillColor: 'rgba(220,220,220,0.2)',

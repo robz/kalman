@@ -1,38 +1,20 @@
 /*
- * This is another simple example of how to use the kalman filter, where the
- * state include a position and velocity, only the position is being measured,
- * and the velocity is assumed to be constant.
- *
- * Since the velocity is constant, it's probably just as efficient to use a
- * running average or linear regression to determine the state.
+ * This is the same as example 2, but instead of the process being a constant,
+ * linear function, it's a sinusoid.
  *
  * @flow
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {abs, index, matrix, multiply, pow, subset, ones} = require('mathjs');
+const {PI, abs, index, matrix, multiply, pow, sin, subset, ones} = require('mathjs');
 const {getScalar, normal} = require('./utils');
 
 const DT = 1;
-const START = 1.3;
-const STEPS = 50;
-const MEASUREMENT_VARIANCE = .4;
-const VELOCITY = .1;
-
-/*
- * Some examples I've found use the next derivative of a state to estimate the
- * process variance, to simulate unknown forces. In this case, that would be
- * acceleration, since we're already estimating position and velocity.
- *
- * Seems to me that if the force is truly unknown and random, it doesn't much
- * matter what the process variance is, so long it increases as DT increases.
- * (Since the longer you go without measuring, the more uncertain you should
- * be with your state estimation)
- *
- * In our simulation here, the state model precisely reflects the process, so
- * this value can just be zero.
- */
-const PROCESS_VARIANCE = 0;
+const STEPS = 1000;
+const MEASUREMENT_VARIANCE = 10;
+const MAGNITUDE = 10;
+const PERIOD = DT * STEPS / 6;
+const PROCESS_VARIANCE = 1e-1;
 
 function example(): number {
   /*
@@ -52,15 +34,15 @@ function example(): number {
       [0],
     ]),
     MeasurementCovariance: matrix([
-      [MEASUREMENT_VARIANCE],
+      [500],
     ]),
     ObservationModel: matrix([
       [1, 0],
     ]),
-    ProcessCovariance: multiply(
-      PROCESS_VARIANCE,
-      ones(2, 2)
-    ),
+    ProcessCovariance: matrix([
+      [PROCESS_VARIANCE, 0],
+      [0, PROCESS_VARIANCE],
+    ]),
     StateTransitionModel: matrix([
       [1, DT],
       [0, 1],
@@ -74,7 +56,8 @@ function example(): number {
   ]];
   let covarianceData = [getScalar(kalmanFilter.StateCovariance, 0, 0)];
   let trueData = [null];
-  let position = START;
+  let position = 0;
+  let stepData = [0];
 
   for (let i = 0; i < STEPS; i++) {
     let ControlInput = matrix([[0]]); // no control
@@ -90,7 +73,7 @@ function example(): number {
     ]);
     covarianceData.push(getScalar(StateCovariance, 0, 0));
 
-    position += VELOCITY * DT;
+    position = MAGNITUDE * sin(DT * i * 2 * PI / PERIOD);
   }
 
   let totalError = 0;
@@ -99,7 +82,7 @@ function example(): number {
       totalError += abs(stateData[i][0] - trueData[i]);
     }
     if (global.window) {
-      console.log(measurementData[i], stateData[i], covarianceData[i]);
+    //  console.log(measurementData[i], stateData[i], covarianceData[i]);
     }
   });
 
@@ -113,12 +96,17 @@ function example(): number {
   const xs = stateData.map((e,i) => i);
   stateData = stateData.map(e => e[0]);
 
+  const errorData = stateData.map((e,i) => abs(e - trueData[i]));
+  const errorData2 = measurementData.map((e,i) => abs(e - trueData[i]));
+
   plotly.newPlot(
     'myDiv',
     [
-       {x: xs, y: trueData, mode: 'lines', type: 'scatter'},
-       {x: xs, y: measurementData, mode: 'lines', type: 'scatter'},
-       {x: xs, y: stateData, mode: 'lines', type: 'scatter'},
+       {x: xs, y: trueData, mode: 'lines', type: 'scatter', name: 'true'},
+       {x: xs, y: measurementData, mode: 'lines', type: 'scatter', name: 'measurement'},
+       {x: xs, y: stateData, mode: 'lines', type: 'scatter', name: 'estimate'},
+       {x: xs, y: errorData, mode: 'lines', type: 'scatter', name: 'error'},
+       {x: xs, y: errorData2, mode: 'lines', type: 'scatter', name: 'measure error'},
     ]
   );
 }

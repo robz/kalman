@@ -1,11 +1,10 @@
 /* @flow */
 
-//let example = require('./example1.js');
-let example = require('./example2.js');
+let example = require('./example3.js');
 example();
 
 function benchmark() {
-  let steps = 1000;
+  let steps = 100;
   let errorSum = 0;
   for (let i = 0; i < steps; i++) {
     errorSum += example();
@@ -14,4 +13,6 @@ function benchmark() {
   console.log('average error:', errorSum / steps);
 }
 
-//benchmark();
+if (!global.window) {
+  benchmark();
+}

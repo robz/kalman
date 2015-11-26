@@ -1,6 +1,32 @@
 /* @flow */
 
+var {subset, multiply: multiplyTwo, index} = require('mathjs');
 var {PI, sqrt, log, random, cos} = Math;
+
+// matrix multiply with any number of matricies
+function multiply(...args): Matrix {
+  if (args.length < 2) {
+    throw new Error('multiply must take at least 2 arguments');
+  }
+
+  let result = multiplyTwo(args[0], args[1]);
+  for (let i = 2; i < args.length; i++) {
+    // matrix multiplication is associative, so A*B*C = (A*B)*C
+    result = multiplyTwo(result, args[i]);
+  }
+
+  return result;
+}
+
+// hack to get value out 1x1 mathjs matrix
+function getScalar(m: Object, row?: number = 0, col?: number = 0) {
+  try {
+    return subset(m, index(row, col));
+  } catch(e) {
+    // Apparently mutliplying two matricies together can yield a scalar
+    return m;
+  }
+}
 
 function normal(
   mean?: number = 0,
@@ -34,4 +60,4 @@ function makeCanvasFitWindow(canvasID: string): void {
   context.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
 }
 
-module.exports = {normal, makeCanvasFitWindow};
+module.exports = {getScalar, multiply, normal, makeCanvasFitWindow};

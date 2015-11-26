@@ -1,69 +1,62 @@
 /* @flow */
 
-type Matrix = Object;
-
-const {eye, clone, format, add, subtract, inv, transpose, matrix} = require('mathjs');
+const {eye, clone, format, add, subtract,  inv, transpose, matrix} = require('mathjs');
 const {multiply} = require('./utils');
 
-class KalmanFilter {
-  ControlModel: Matrix;
+type Matrix = Object;
+type Params = {
   MeasurementCovariance: Matrix;
-  ObservationModel: Matrix;
+  ObservationFunction: (x: Matrix) => Matrix;
+  ObservationJacobian: Matrix;
   ProcessCovariance: Matrix;
+  StateTransitionFunction: (x: Matrix, u: Matrix) => Matrix;
+  StateTransitionJacobian: Matrix;
+};
+
+class ExtendedKalmanFilter {
   State: Matrix;
   StateCovariance: Matrix;
-  StateTransitionModel: Matrix;
+  params: Params;
   NUM_DIMENSIONS: number;
 
-  constructor({
-    ControlModel,
-    InitialCovariance,
-    InitialState,
-    MeasurementCovariance,
-    ObservationModel,
-    ProcessCovariance,
-    StateTransitionModel,
-  }: Object) {
-    this.ControlModel = ControlModel;
-    this.MeasurementCovariance = MeasurementCovariance;
-    this.ObservationModel = ObservationModel;
-    this.ProcessCovariance = ProcessCovariance;
+  constructor(
+    InitialCovariance: Matrix,
+    InitialState: Matrix,
+    params: Params;
+  ) {
     this.State = InitialState;
     this.StateCovariance = InitialCovariance;
-    this.StateTransitionModel = StateTransitionModel;
-
+    this.params = params;
     this.NUM_DIMENSIONS = InitialState.size()[0];
   }
 
   step(
     MeasurementInput: Matrix,
     ControlInput: Matrix,
-    ProcessCovariance?: Matrix
   ): {State: Matrix; StateCovariance: Matrix} {
     let {
-      ControlModel: B,
-      MeasurementCovariance: R,
-      ObservationModel: H,
-      ProcessCovariance: Q,
       State: x,
       StateCovariance: P,
-      StateTransitionModel: F,
+      params: {
+        MeasurementCovariance: R,
+        ObservationFunction: h,
+        ObservationJacobian: H,
+        ProcessCovariance: Q,
+        StateTransitionFunction: f
+        StateTransitionJacobian: F,
+      },
       NUM_DIMENSIONS: N,
     } = this;
 
     let u = ControlInput;
     let z = MeasurementInput;
 
-    if (ProcessCovariance) {
-      Q = ProcessCovariance;
-    }
-
     // predict
-    let xPriori = add(multiply(F, x), multiply(B, u));
+    let xPriori = f(x, u);
     let PPriori = add(Q, multiply(F, P, transpose(F)));
 
     // measurement and innovation
-    let y = subtract(z, multiply(H, xPriori));
+    let y = subtract(z, h(xPriori));
     let S = add(R, multiply(H, PPriori, transpose(H)));
 
     // kalman gain
@@ -80,4 +73,4 @@ class KalmanFilter {
   }
 }
 
-module.exports = KalmanFilter;
+module.exports = ExtendedKalmanFilter;

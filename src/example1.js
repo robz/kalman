@@ -10,22 +10,13 @@
 
 const KalmanFilter = require('./KalmanFilter');
 const {index, matrix, subset} = require('mathjs');
-const {makeCanvasFitWindow, normal} = require('./utils');
+const {getScalar, makeCanvasFitWindow, normal} = require('./utils');
 
 const MEAN = 1.3;
 const STEPS = 50;
 const VARIANCE = .1;
 
 // hack to get value out 1x1 mathjs matrix
-function getScalar(m) {
-  try {
-    return subset(m, index(0,0));
-  } catch(e) {
-    // Apparently mutliplying two matricies together can yield a scalar
-    return m;
-  }
-}
-
 function example() {
   /*
    * Kalman filter steps

@@ -66,49 +66,18 @@ function example() {
    */
   if (!global.window) return;
 
-  const Chart = require('chart.js');
+  const plotly = require('plotly.js');
 
-  makeCanvasFitWindow('canvas');
-  let canvas: any = document.getElementById('canvas');
-  let ctx = canvas.getContext('2d');
+  var xs = stateData.map((e,i) => i);
 
-  let data = {
-    labels: stateData.map((e,i) => i),
-    datasets: [
-      {
-        label: 'Truth',
-        fillColor: 'rgba(205,187,151,0.2)',
-        strokeColor: 'rgba(205,187,151,1)',
-        pointColor: 'rgba(205,187,151,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(205,187,151,1)',
-        data: trueData,
-      },
-      {
-        label: 'Measurements',
-        fillColor: 'rgba(220,220,220,0.2)',
-        strokeColor: 'rgba(220,220,220,1)',
-        pointColor: 'rgba(220,220,220,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(220,220,220,1)',
-        data: measurementData,
-      },
-      {
-        label: 'States',
-        fillColor: 'rgba(151,187,205,0.2)',
-        strokeColor: 'rgba(151,187,205,1)',
-        pointColor: 'rgba(151,187,205,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(151,187,205,1)',
-        data: stateData,
-      },
-    ],
-  };
-
-  let myLineChart = new Chart(ctx).Line(data, {bezierCurve: false});
+  plotly.newPlot(
+    'myDiv',
+    [
+       {x: xs, y: trueData, mode: 'lines', type: 'scatter'},
+       {x: xs, y: measurementData, mode: 'lines', type: 'scatter'},
+       {x: xs, y: stateData, mode: 'lines', type: 'scatter'},
+    ]
+  );
 }
 
 module.exports = example;

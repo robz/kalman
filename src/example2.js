@@ -10,7 +10,7 @@
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {index, matrix, multiply, pow, subset, ones} = require('mathjs');
+const {abs, index, matrix, multiply, pow, subset, ones} = require('mathjs');
 const {makeCanvasFitWindow, normal} = require('./utils');
 
 const DT = 1;
@@ -54,8 +54,8 @@ function example(): number {
       [0],
     ]),
     InitialCovariance: matrix([
-      [999, 0],
-      [0, 999],
+      [99, 0],
+      [0, 99],
     ]),
     InitialState: matrix([
       [0],
@@ -103,59 +103,34 @@ function example(): number {
     position += VELOCITY * DT;
   }
 
-  let totalError  = 0;
+  let totalError = 0;
   measurementData.forEach((_, i) => {
-    console.log(measurementData[i], stateData[i], covarianceData[i]);
+    if (i !== 0) {
+      totalError += abs(stateData[i][0] - trueData[i]);
+    }
+    if (global.window) {
+      console.log(measurementData[i], stateData[i], covarianceData[i]);
+    }
   });
 
   /*
    * Draw the data
    */
-  if (!global.window) return;
+  if (!global.window) return totalError;
 
-  const Chart = require('chart.js');
+  const plotly = require('plotly.js');
 
-  makeCanvasFitWindow('canvas');
-  let canvas: any = document.getElementById('canvas');
-  let ctx = canvas.getContext('2d');
+  const xs = stateData.map((e,i) => i);
+  stateData = stateData.map(e => e[0]);
 
-  let data = {
-    labels: stateData.map((e,i) => i),
-    datasets: [
-      {
-        label: 'Truth',
-        fillColor: 'rgba(205,187,151,0.2)',
-        strokeColor: 'rgba(205,187,151,1)',
-        pointColor: 'rgba(205,187,151,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(205,187,151,1)',
-        data: trueData,
-      },
-      {
-        label: 'Measurements',
-        fillColor: 'rgba(220,220,220,0.2)',
-        strokeColor: 'rgba(220,220,220,1)',
-        pointColor: 'rgba(220,220,220,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(220,220,220,1)',
-        data: measurementData,
-      },
-      {
-        label: 'States',
-        fillColor: 'rgba(151,187,205,0.2)',
-        strokeColor: 'rgba(151,187,205,1)',
-        pointColor: 'rgba(151,187,205,1)',
-        pointStrokeColor: '#fff',
-        pointHighlightFill: '#fff',
-        pointHighlightStroke: 'rgba(151,187,205,1)',
-        data: stateData.map(state => state[0]),
-      },
-    ],
-  };
-
-  let myLineChart = new Chart(ctx).Line(data, {bezierCurve: false});
+  plotly.newPlot(
+    'myDiv',
+    [
+       {x: xs, y: trueData, mode: 'lines', type: 'scatter'},
+       {x: xs, y: measurementData, mode: 'lines', type: 'scatter'},
+       {x: xs, y: stateData, mode: 'lines', type: 'scatter'},
+    ]
+  );
 }
 
 module.exports = example;

@@ -1,8 +1,9 @@
 /* @flow */
 
-let example = require('./example3.js');
+let example = require('./example4.js');
 example();
 
+/*
 function benchmark() {
   let steps = 100;
   let errorSum = 0;
@@ -16,3 +17,4 @@ function benchmark() {
 if (!global.window) {
   benchmark();
 }
+*/

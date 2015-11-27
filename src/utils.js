@@ -3,8 +3,10 @@
 var {subset, multiply: multiplyTwo, index} = require('mathjs');
 var {PI, sqrt, log, random, cos} = Math;
 
+export type Matrix = Object;
+
 // matrix multiply with any number of matricies
-function multiply(...args): Matrix {
+function multiply(...args: Array<Matrix>): Matrix {
   if (args.length < 2) {
     throw new Error('multiply must take at least 2 arguments');
   }

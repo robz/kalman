@@ -1,16 +1,17 @@
 /* @flow */
 
-const {eye, clone, format, add, subtract,  inv, transpose, matrix} = require('mathjs');
+import type {Matrix} from './utils';
+
+const {eye, clone, format, add, subtract, inv, transpose, matrix} = require('mathjs');
 const {multiply} = require('./utils');
 
-type Matrix = Object;
 type Params = {
   MeasurementCovariance: Matrix;
-  ObservationFunction: (x: Matrix) => Matrix;
-  ObservationJacobian: Matrix;
   ProcessCovariance: Matrix;
-  StateTransitionFunction: (x: Matrix, u: Matrix) => Matrix;
-  StateTransitionJacobian: Matrix;
+  observationFunct: (x: Matrix, t: number) => Matrix;
+  observationJacobianFunct: (x: Matrix, t: number) => Matrix;
+  stateTransitionFunct: (x: Matrix, u: Matrix, t: number) => Matrix;
+  stateTransitionJacobianFunct: (x: Matrix, u: Matrix, t: number) => Matrix;
 };
 
 class ExtendedKalmanFilter {
@@ -20,9 +21,11 @@ class ExtendedKalmanFilter {
   NUM_DIMENSIONS: number;
 
   constructor(
-    InitialCovariance: Matrix,
-    InitialState: Matrix,
-    params: Params;
+    {InitialCovariance, InitialState, params}: {
+      InitialCovariance: Matrix;
+      InitialState: Matrix;
+      params: Params;
+    }
   ) {
     this.State = InitialState;
     this.StateCovariance = InitialCovariance;
@@ -33,30 +36,33 @@ class ExtendedKalmanFilter {
   step(
     MeasurementInput: Matrix,
     ControlInput: Matrix,
+    t: number
   ): {State: Matrix; StateCovariance: Matrix} {
     let {
       State: x,
       StateCovariance: P,
       params: {
         MeasurementCovariance: R,
-        ObservationFunction: h,
-        ObservationJacobian: H,
         ProcessCovariance: Q,
-        StateTransitionFunction: f
-        StateTransitionJacobian: F,
+        observationFunct: h,
+        observationJacobianFunct,
+        stateTransitionFunct: f,
+        stateTransitionJacobianFunct,
       },
       NUM_DIMENSIONS: N,
     } = this;
 
     let u = ControlInput;
     let z = MeasurementInput;
+    let F = stateTransitionJacobianFunct(x._data, u._data, t);
+    let H = observationJacobianFunct(x._data, t);
 
     // predict
-    let xPriori = f(x, u);
+    let xPriori = f(x._data, u._data, t);
     let PPriori = add(Q, multiply(F, P, transpose(F)));
 
     // measurement and innovation
-    let y = subtract(z, h(xPriori));
+    let y = subtract(z, h(xPriori._data, t));
     let S = add(R, multiply(H, PPriori, transpose(H)));
 
     // kalman gain

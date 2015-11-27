@@ -5,12 +5,11 @@
  * In this senario, a running average would be just as effective as  Kalman
  * filter.
  *
- * @flow
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {index, matrix, subset} = require('mathjs');
-const {getScalar, makeCanvasFitWindow, normal} = require('./utils');
+const {matrix} = require('mathjs');
+const {getScalar, normal} = require('./utils');
 
 const MEAN = 1.3;
 const STEPS = 50;

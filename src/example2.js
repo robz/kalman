@@ -6,11 +6,10 @@
  * Since the velocity is constant, it's probably just as efficient to use a
  * running average or linear regression to determine the state.
  *
- * @flow
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {abs, index, matrix, multiply, pow, subset, ones} = require('mathjs');
+const {abs, matrix, multiply, ones} = require('mathjs');
 const {getScalar, normal} = require('./utils');
 
 const DT = 1;

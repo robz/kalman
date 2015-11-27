@@ -2,7 +2,6 @@
  * This is the same as example 2, but instead of the process being a constant,
  * linear function, it's a sinusoid.
  *
- * @flow
  */
 
 const KalmanFilter = require('./KalmanFilter');
@@ -11,10 +10,15 @@ const {getScalar, normal} = require('./utils');
 
 const DT = 1;
 const STEPS = 1000;
+
 const MEASUREMENT_VARIANCE = 10;
+
+// Here, we need to account for the fact that the model does not represent
+// the process very well.
+const PROCESS_VARIANCE = .01;
+
 const MAGNITUDE = 10;
 const PERIOD = DT * STEPS / 6;
-const PROCESS_VARIANCE = 1e-1;
 
 function example(): number {
   /*
@@ -34,7 +38,7 @@ function example(): number {
       [0],
     ]),
     MeasurementCovariance: matrix([
-      [500],
+      [MEASUREMENT_VARIANCE],
     ]),
     ObservationModel: matrix([
       [1, 0],
@@ -60,6 +64,8 @@ function example(): number {
   let stepData = [0];
 
   for (let i = 0; i < STEPS; i++) {
+    position = MAGNITUDE * sin(DT * i * 2 * PI / PERIOD);
+
     let ControlInput = matrix([[0]]); // no control
     let MeasurementInput = matrix([[normal(position, MEASUREMENT_VARIANCE)]]);
     let {State, StateCovariance} =
@@ -72,8 +78,6 @@ function example(): number {
       getScalar(State, 1, 0),
     ]);
     covarianceData.push(getScalar(StateCovariance, 0, 0));
-
-    position = MAGNITUDE * sin(DT * i * 2 * PI / PERIOD);
   }
 
   let totalError = 0;
@@ -82,7 +86,7 @@ function example(): number {
       totalError += abs(stateData[i][0] - trueData[i]);
     }
     if (global.window) {
-    //  console.log(measurementData[i], stateData[i], covarianceData[i]);
+      //console.log(trueData[i], measurementData[i], stateData[i], covarianceData[i]);
     }
   });
 
@@ -96,17 +100,12 @@ function example(): number {
   const xs = stateData.map((e,i) => i);
   stateData = stateData.map(e => e[0]);
 
-  const errorData = stateData.map((e,i) => abs(e - trueData[i]));
-  const errorData2 = measurementData.map((e,i) => abs(e - trueData[i]));
-
   plotly.newPlot(
     'myDiv',
     [
-       {x: xs, y: trueData, mode: 'lines', type: 'scatter', name: 'true'},
-       {x: xs, y: measurementData, mode: 'lines', type: 'scatter', name: 'measurement'},
-       {x: xs, y: stateData, mode: 'lines', type: 'scatter', name: 'estimate'},
-       {x: xs, y: errorData, mode: 'lines', type: 'scatter', name: 'error'},
-       {x: xs, y: errorData2, mode: 'lines', type: 'scatter', name: 'measure error'},
+      {x: xs, y: trueData, mode: 'lines', type: 'scatter', name: 'true'},
+      {x: xs, y: measurementData, mode: 'lines', type: 'scatter', name: 'measurement'},
+      {x: xs, y: stateData, mode: 'lines', type: 'scatter', name: 'estimate'},
     ]
   );
 }

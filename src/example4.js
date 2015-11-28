@@ -49,9 +49,9 @@ function example(): void {
         [0, 0, 0, 1],
       ]),
       ProcessCovariance: matrix([
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
+        [PROCESS_VARIANCE, 0, 0, 0],
+        [0, PROCESS_VARIANCE, 0, 0],
+        [0, 0, PROCESS_VARIANCE, 0],
         [0, 0, 0, 0],
       ]),
       stateTransitionFunct: ([[a],[w],[d],[t]]) => matrix([
@@ -88,13 +88,13 @@ function example(): void {
 
     // step
     let {State, StateCovariance} =
-      kalmanFilter.step(MeasurementInput, ControlInput, t);
+      kalmanFilter.step(MeasurementInput, ControlInput);
 
     // record
     trueData.push(position);
     measurementData.push(getScalar(MeasurementInput, 0, 0));
-    let x = State._data[0];
-    stateData.push(x[0] *  sin(x[2] + x[1] * x[3]));
+    let x = State._data;
+    stateData.push(x[0][0] *  sin(x[2][0] + x[1][0] * x[3][0]));
   }
 
   /*
@@ -103,6 +103,7 @@ function example(): void {
   const plotly = require('plotly.js');
 
   const xs = stateData.map((e,i) => i);
+
   plotly.newPlot(
     'myDiv',
     [

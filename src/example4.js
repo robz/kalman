@@ -7,7 +7,7 @@
 
 const ExtendedKalmanFilter = require('./ExtendedKalmanFilter');
 const {PI, abs, index, matrix, multiply, pow, cos, sin, subset, ones} = require('mathjs');
-const {getScalar, normal} = require('./utils');
+const {normal} = require('./utils');
 
 const DT = 1;
 const STEPS = 1000;
@@ -70,9 +70,9 @@ function example(): void {
   });
 
   let measurementData = [0];
-  let stateData = [0]
-  let covarianceData = [getScalar(kalmanFilter.StateCovariance, 0, 0)];
   let trueData = [0];
+  let x = kalmanFilter.State._data;
+  let stateData = [x[0][0] *  sin(x[2][0] + x[1][0] * x[3][0])]
 
   for (let i = 0; i < STEPS; i++) {
     // simulate
@@ -92,8 +92,8 @@ function example(): void {
 
     // record
     trueData.push(position);
-    measurementData.push(getScalar(MeasurementInput, 0, 0));
-    let x = State._data;
+    measurementData.push(MeasurementInput._data[0][0]);
+    x = State._data;
     stateData.push(x[0][0] *  sin(x[2][0] + x[1][0] * x[3][0]));
   }
 

@@ -6,17 +6,18 @@
  * Since the velocity is constant, it's probably just as efficient to use a
  * running average or linear regression to determine the state.
  *
+ * @flow
+ *
  */
 
 const KalmanFilter = require('./KalmanFilter');
 const {abs, matrix, multiply, ones} = require('mathjs');
-const {getScalar, normal} = require('./utils');
+const {normal} = require('./utils');
 
 const DT = 1;
-const START = 1.3;
 const STEPS = 50;
+
 const MEASUREMENT_VARIANCE = .4;
-const VELOCITY = .1;
 
 /*
  * Some examples I've found use the next derivative of a state to estimate the
@@ -32,6 +33,9 @@ const VELOCITY = .1;
  * this value can just be zero.
  */
 const PROCESS_VARIANCE = 0;
+
+const START = 1.3;
+const VELOCITY = .1;
 
 function example(): number {
   /*
@@ -56,57 +60,61 @@ function example(): number {
     ObservationModel: matrix([
       [1, 0],
     ]),
-    ProcessCovariance: multiply(
-      PROCESS_VARIANCE,
-      ones(2, 2)
-    ),
+    ProcessCovariance: matrix([
+      [PROCESS_VARIANCE, PROCESS_VARIANCE],
+      [PROCESS_VARIANCE, PROCESS_VARIANCE],
+    ]),
     StateTransitionModel: matrix([
       [1, DT],
       [0, 1],
     ]),
   });
 
-  let measurementData = [null]; // ignore this first measurement
-  let stateData = [[
-    getScalar(kalmanFilter.State, 0, 0),
-    getScalar(kalmanFilter.State, 1, 0),
-  ]];
-  let covarianceData = [getScalar(kalmanFilter.StateCovariance, 0, 0)];
-  let trueData = [null];
+  let trueData = [0]; // ignore this first value
+  let measurementData = [0]; // ignore this first measurement
+  let x = kalmanFilter.State._data;
+  let stateData = [[x[0][0], x[1][0]]];
+  let covarianceData = [kalmanFilter.StateCovariance._data[0][0]];
+
   let position = START;
 
   for (let i = 0; i < STEPS; i++) {
+    // simulate
+    position = START + i * DT * VELOCITY;
+
+    // measure
     let ControlInput = matrix([[0]]); // no control
     let MeasurementInput = matrix([[normal(position, MEASUREMENT_VARIANCE)]]);
+
+    // step
     let {State, StateCovariance} =
       kalmanFilter.step(MeasurementInput, ControlInput);
 
+    // record
     trueData.push(position);
-    measurementData.push(getScalar(MeasurementInput, 0, 0));
-    stateData.push([
-      getScalar(State, 0, 0),
-      getScalar(State, 1, 0),
-    ]);
-    covarianceData.push(getScalar(StateCovariance, 0, 0));
-
-    position += VELOCITY * DT;
+    measurementData.push(MeasurementInput._data[0][0]);
+    let x = kalmanFilter.State._data;
+    stateData.push([x[0][0], x[1][0]]);
+    covarianceData.push(StateCovariance._data[0][0]);
   }
 
-  let totalError = 0;
-  measurementData.forEach((_, i) => {
-    if (i !== 0) {
-      totalError += abs(stateData[i][0] - trueData[i]);
-    }
-    if (global.window) {
-      console.log(measurementData[i], stateData[i], covarianceData[i]);
-    }
-  });
+  if (!global.window) {
+    let totalError = 0;
+    trueData.forEach((_, i) => {
+      if (i !== 0) {
+        totalError += abs(stateData[i][0] - trueData[i]);
+      }
+    });
+    return totalError;
+  } else {
+    //trueData.forEach((_, i) => {
+    //  console.log(trueData[i], measurementData[i], stateData[i], covarianceData[i]);
+    //});
+  }
 
   /*
    * Draw the data
    */
-  if (!global.window) return totalError;
-
   const plotly = require('plotly.js');
 
   const xs = stateData.map((e,i) => i);
@@ -120,6 +128,8 @@ function example(): number {
        {x: xs, y: stateData, mode: 'lines', type: 'scatter'},
     ]
   );
+
+  return 0;
 }
 
 module.exports = example;

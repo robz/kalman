@@ -11,9 +11,9 @@ const KalmanFilter = require('./KalmanFilter');
 const {matrix} = require('mathjs');
 const {getScalar, normal} = require('./utils');
 
-const MEAN = 1.3;
 const STEPS = 50;
-const VARIANCE = .1;
+const MEAN = 1.3;
+const MEASUREMENT_VARIANCE = .1;
 
 // hack to get value out 1x1 mathjs matrix
 function example() {
@@ -24,23 +24,27 @@ function example() {
     ControlModel: matrix([[0]]),            // no control
     InitialCovariance: matrix([[1]]),       // guess
     InitialState: matrix([[3]]),            // guess
-    MeasurementCovariance: matrix([[.2]]),  // >= VARIANCE
+    MeasurementCovariance: matrix([[MEASUREMENT_VARIANCE]]),
     ObservationModel: matrix([[1]]),        // state = measurement
-    ProcessCovariance: matrix([[.00001]]),  // guess
+    ProcessCovariance: matrix([[0]]),       // model is the simulation
     StateTransitionModel: matrix([[1]]),    // state doesn't change
   });
 
-  let measurementData = [null]; // ignore this first measurement
+  let trueData = [0]; // ignore this first value
+  let measurementData = [0]; // ignore this first measurement
   let stateData = [getScalar(kalmanFilter.State)];
   let covarianceData = [getScalar(kalmanFilter.StateCovariance)];
-  let trueData = [null];
 
   for (let i = 0; i < STEPS; i++) {
+    // measure
     let ControlInput = matrix([[0]]); // no control
-    let MeasurementInput = matrix([[normal(MEAN, VARIANCE)]]);
+    let MeasurementInput = matrix([[normal(MEAN, MEASUREMENT_VARIANCE)]]);
+
+    // step
     let {State, StateCovariance} =
       kalmanFilter.step(MeasurementInput, ControlInput);
 
+    // record
     trueData.push(MEAN);
     measurementData.push(getScalar(MeasurementInput));
     stateData.push(getScalar(State));
@@ -51,11 +55,11 @@ function example() {
     console.log(measurementData[i], stateData[i], covarianceData[i]);
   });
 
+  if (!global.window) return;
+
   /*
    * Draw the data
    */
-  if (!global.window) return;
-
   const plotly = require('plotly.js');
 
   var xs = stateData.map((e,i) => i);

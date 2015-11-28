@@ -20,13 +20,13 @@ const {PI, matrix, cos, sin} = require('mathjs');
 const {normal} = require('./utils');
 
 const DT = 1;
-const STEPS = 100;
+const STEPS = 1000;
 
 const MEASUREMENT_VARIANCE = 10;
 const PROCESS_VARIANCE = 0;
 
 const MAGNITUDE = 10;
-const PERIOD = DT * STEPS / 3;
+const PERIOD = DT * STEPS / 4;
 
 function example(): void {
   /*

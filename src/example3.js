@@ -15,9 +15,17 @@ const STEPS = 1000;
 
 const MEASUREMENT_VARIANCE = 10;
 
-// Here, we need to account for the fact that the model does not represent
-// the process very well.
-const PROCESS_VARIANCE = .01;
+/*
+ * Here, we need to account for the fact that the model does not represent
+ * the process very well. I believe it should also be a function of DT for
+ * two intuitive reasons:
+ *
+ * 1) the longer you go without a measurement, the more uncertainer you are
+ * 2) if you do two predictions in a time step, and then one measurement, you
+ *    should be just as certain as if you made one prediction, and then one
+ *    measurement.
+ */
+const PROCESS_VARIANCE = .01 * DT;
 
 const MAGNITUDE = 10;
 const PERIOD = DT * STEPS / 4;
@@ -55,10 +63,10 @@ function example(): number {
     ]),
   });
 
-  let trueData = [0]; // ignore this first data
+  let trueData = [0]; // ignore this first value
   let measurementData = [0]; // ignore this first measurement
   let x = kalmanFilter.State._data;
-  let stateData = [x[0][0], x[1][0]];
+  let stateData = [[x[0][0], x[1][0]]];
   let covarianceData = [kalmanFilter.StateCovariance._data[0][0]];
 
   let position = 0;

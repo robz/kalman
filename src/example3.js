@@ -2,11 +2,13 @@
  * This is the same as example 2, but instead of the process being a constant,
  * linear function, it's a sinusoid.
  *
+ * @flow
+ *
  */
 
 const KalmanFilter = require('./KalmanFilter');
-const {PI, abs, index, matrix, multiply, pow, sin, subset, ones} = require('mathjs');
-const {getScalar, normal} = require('./utils');
+const {PI, abs, matrix, sin} = require('mathjs');
+const {normal} = require('./utils');
 
 const DT = 1;
 const STEPS = 1000;
@@ -18,7 +20,7 @@ const MEASUREMENT_VARIANCE = 10;
 const PROCESS_VARIANCE = .01;
 
 const MAGNITUDE = 10;
-const PERIOD = DT * STEPS / 6;
+const PERIOD = DT * STEPS / 4;
 
 function example(): number {
   /*
@@ -53,48 +55,51 @@ function example(): number {
     ]),
   });
 
-  let measurementData = [null]; // ignore this first measurement
-  let stateData = [[
-    getScalar(kalmanFilter.State, 0, 0),
-    getScalar(kalmanFilter.State, 1, 0),
-  ]];
-  let covarianceData = [getScalar(kalmanFilter.StateCovariance, 0, 0)];
-  let trueData = [null];
+  let trueData = [0]; // ignore this first data
+  let measurementData = [0]; // ignore this first measurement
+  let x = kalmanFilter.State._data;
+  let stateData = [x[0][0], x[1][0]];
+  let covarianceData = [kalmanFilter.StateCovariance._data[0][0]];
+
   let position = 0;
-  let stepData = [0];
 
   for (let i = 0; i < STEPS; i++) {
+    // simulate
     position = MAGNITUDE * sin(DT * i * 2 * PI / PERIOD);
 
+    // measure
     let ControlInput = matrix([[0]]); // no control
     let MeasurementInput = matrix([[normal(position, MEASUREMENT_VARIANCE)]]);
+
+    // step
     let {State, StateCovariance} =
       kalmanFilter.step(MeasurementInput, ControlInput);
 
+    // record
     trueData.push(position);
-    measurementData.push(getScalar(MeasurementInput, 0, 0));
-    stateData.push([
-      getScalar(State, 0, 0),
-      getScalar(State, 1, 0),
-    ]);
-    covarianceData.push(getScalar(StateCovariance, 0, 0));
+    measurementData.push(MeasurementInput._data[0][0]);
+    x = State._data;
+    stateData.push([x[0][0], x[1][0]]);
+    covarianceData.push(StateCovariance._data[0][0]);
   }
 
-  let totalError = 0;
-  measurementData.forEach((_, i) => {
-    if (i !== 0) {
-      totalError += abs(stateData[i][0] - trueData[i]);
-    }
-    if (global.window) {
-      //console.log(trueData[i], measurementData[i], stateData[i], covarianceData[i]);
-    }
-  });
+  if (!global.window) {
+    let totalError = 0;
+    trueData.forEach((_, i) => {
+      if (i !== 0) {
+        totalError += abs(stateData[i][0] - trueData[i]);
+      }
+    });
+    return totalError;
+  } else {
+    //trueData.forEach((_, i) => {
+    //  console.log(trueData[i], measurementData[i], stateData[i], covarianceData[i]);
+    //});
+  }
 
   /*
    * Draw the data
    */
-  if (!global.window) return totalError;
-
   const plotly = require('plotly.js');
 
   const xs = stateData.map((e,i) => i);
@@ -108,6 +113,8 @@ function example(): number {
       {x: xs, y: stateData, mode: 'lines', type: 'scatter', name: 'estimate'},
     ]
   );
+
+  return 0;
 }
 
 module.exports = example;

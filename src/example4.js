@@ -1,16 +1,26 @@
 /*
- * This is the same as example 2, but instead of the process being a constant,
- * linear function, it's a sinusoid.
+ * This is the same sinusoid simulation as example 3, with the same measurement
+ * input, but instead of estimating position and velocity, we estimate the
+ * characteristics of the sinusoid (frequency, amplitude, and phase).
+ *
+ * However, we can't use a normal kalman filter here, because the transform
+ * from the state to the measurement is nonlinear:
+ *
+ *   measurement = h(state)
+ *               = amp * sin( freq * t + phase )
+ *
+ * One way to handle this nonlinear function is to use an extended kalman
+ * filter.
  *
  * @flow
  */
 
 const ExtendedKalmanFilter = require('./ExtendedKalmanFilter');
-const {PI, abs, index, matrix, multiply, pow, cos, sin, subset, ones} = require('mathjs');
+const {PI, matrix, cos, sin} = require('mathjs');
 const {normal} = require('./utils');
 
 const DT = 1;
-const STEPS = 1000;
+const STEPS = 100;
 
 const MEASUREMENT_VARIANCE = 10;
 const PROCESS_VARIANCE = 0;
@@ -69,15 +79,15 @@ function example(): void {
     }
   });
 
-  let measurementData = [0];
-  let trueData = [0];
+  let trueData = [0]; // ignore this first value
+  let measurementData = [0]; // ignore this first measurement
   let x = kalmanFilter.State._data;
-  let stateData = [x[0][0] *  sin(x[2][0] + x[1][0] * x[3][0])]
+  let stateData = [x[0][0] *  sin(x[2][0] + x[1][0] * x[3][0])];
 
   for (let i = 0; i < STEPS; i++) {
     // simulate
     let t = DT * i;
-    let position = MAGNITUDE * sin(t * 2 * PI / PERIOD);
+    let position = MAGNITUDE * sin(t * 2 * PI / PERIOD + 1);
 
     // measure
     let ControlInput = matrix([[0]]); // no control

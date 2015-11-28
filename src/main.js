@@ -1,6 +1,6 @@
 /* @flow */
 
-let example = require('./example4.js');
+let example = require('./example3.js');
 example();
 
 /*
